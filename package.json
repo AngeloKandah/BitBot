@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.mjs",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "npx nodemon index.mjs"
   },
   "author": "",
   "license": "ISC",
@@ -12,5 +13,8 @@
     "discord.js": "^13.6.0",
     "dotenv": "^16.0.0",
     "pg": "^8.7.3"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.15"
   }
 }
