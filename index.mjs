@@ -33,17 +33,20 @@ discordClient.on('messageCreate', async (message) => {
     author: { id: idOfAuthor },
   } = message;
   const [command, ...params] = args;
-  if (command === 'test') {
-    message.channel.send('test success');
-  }
-  /* if (command === 'addAdmin' && (idOfAuthor === process.env.ADMIN || true)) {
-    const dbQuery = `
-      SELECT * FROM bitbot 
-      WHERE user_id = ANY(VALUES($1));`;
-    const valuesForQuery = [idOfAuthor];
-    console.log(await database.query(dbQuery, valuesForQuery));
 
-  } */
+  if (command === 'addAdmin') {
+    if (!message.mentions.users.size) {
+      return message.reply('Missing new admin to add.');
+    }
+    const dbQueryForUsers = `
+      SELECT user_id FROM bitbotadmin;
+    `;
+    const { rows } = await database.query(dbQuery);
+    const commandRunByAdmin = rows.some(({ user_id }) => user_id === idOfAuthor);
+    if (!commandRunByAdmin) {
+      return;
+    }
+  }
 
   if (command === 'givebits') {
     if (!message.mentions.users.size) {
@@ -55,11 +58,14 @@ discordClient.on('messageCreate', async (message) => {
       return message.reply('Missing Bit Amount.');
     }
     const dbQuery = `
-      INSERT INTO bitbot(id, user_id, bits) 
-      VALUES(DEFAULT, $1, $2)
-      ON CONFLICT (user_id) 
-      DO 
-        UPDATE SET bits = EXCLUDED.bits + bitbot.bits`;
+      INSERT INTO 
+        bitbot(id, user_id, bits) 
+      VALUES 
+        (DEFAULT, $1, $2)
+      ON CONFLICT (user_id) DO 
+        UPDATE 
+          SET bits = EXCLUDED.bits + bitbot.bits;
+    `;
     const valuesForQuery = [id, bits];
     await database.query(dbQuery, valuesForQuery);
   }
