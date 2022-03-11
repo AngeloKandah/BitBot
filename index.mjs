@@ -20,19 +20,19 @@ console.log('Successfully Connected to Bot');
 const database = new postgres.Client();
 await database.connect();
 console.log('Successfully Connected to Postgres');
-await database.query(
-  `CREATE TABLE IF NOT EXISTS admin(
+await database.query(`
+  CREATE TABLE IF NOT EXISTS admin(
     id SERIAL,
     user_id TEXT UNIQUE
-  );`
-);
-await database.query(
-  `CREATE TABLE IF NOT EXISTS bits(
+  );
+`);
+await database.query(`
+  CREATE TABLE IF NOT EXISTS bits(
     id SERIAL,
     user_id TEXT UNIQUE,
     bits INTEGER
-  );`
-);
+  );
+`);
 
 const prefix = '!';
 
@@ -45,21 +45,29 @@ discordClient.on('messageCreate', async (message) => {
     author: { id: idOfAuthor },
   } = message;
   const [command, ...params] = args;
+  const s = idOfAuthor.toString();
 
   if (command === 'addAdmin') {
     if (!message.mentions.users.size) {
       return message.reply('Missing new admin to add.');
     }
-    const dbQueryForUsers = `
-      SELECT user_id FROM admin;
-    `;
-    const { rows } = await database.query(dbQuery);
-    const isCommandRanByAdmin = rows.some(
-      ({ user_id }) => user_id === idOfAuthor
-    );
-    if (!isCommandRanByAdmin) {
+    const { rows: isCommandRanByAdmin } = await database.query(`
+        SELECT user_id FROM admin
+        WHERE user_id = ${idOfAuthor}::TEXT;
+      `);
+    if (!!isCommandRanByAdmin.length || !(process.env.ADMIN === idOfAuthor)) {
       return;
     }
+    const [raw_id, ...rest] = params;
+    const id = raw_id.replace(/[^0-9]*/g, '');
+    await database.query(`
+      INSERT INTO
+        admin(id, user_id)
+      VALUES
+        (DEFAULT, ${id})
+      ON CONFLICT (user_id) DO
+        NOTHING;
+    `);
   }
 
   if (command === 'givebits') {
@@ -71,23 +79,21 @@ discordClient.on('messageCreate', async (message) => {
     if (!bits) {
       return message.reply('Missing Bit Amount.');
     }
-    const dbQuery = `
+    await database.query(`
       INSERT INTO 
         bits(id, user_id, bits) 
       VALUES 
-        (DEFAULT, $1, $2)
+        (DEFAULT, ${id}, ${bits})
       ON CONFLICT (user_id) DO 
         UPDATE 
           SET bits = EXCLUDED.bits + bits.bits;
-    `;
-    const valuesForQuery = [id, bits];
-    await database.query(dbQuery, valuesForQuery);
+    `);
   }
 });
 
 //This will be removed upon finalizing, purely for testing and resetting.
 process.once('SIGHUP', async () => {
-  await database.query(`DROP TABLE IF EXISTS admin, bits`);
+  await database.query(`DROP TABLE IF EXISTS admin, bits;`);
   console.log('Successfully dropped tables');
   await database.end();
   return;
