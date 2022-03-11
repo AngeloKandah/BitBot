@@ -5,7 +5,7 @@
   "main": "index.mjs",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "npx nodemon index.mjs"
+    "dev": "npx nodemon --signal SIGHUP index.mjs"
   },
   "author": "",
   "license": "ISC",
