@@ -20,7 +20,6 @@ const database = new postgres.Client();
 await database.connect();
 console.log('Successfully Connected to Postgres');
 
-
 //Use node tap for testing, modularize
 const ADD_ADMIN = 'addAdmin';
 const GIVE_BITS = 'giveBits';
@@ -37,11 +36,7 @@ discordClient.on('messageCreate', async (message) => {
     return;
   }
   const args = message.content.slice(prefix.length).trim().split(/\s+/);
-  const {
-    author: { id: authorId },
-  } = message;
   const [command, ...params] = args;
-
   if (!Object.keys(commandList).includes(command)) {
     return;
   }
@@ -52,6 +47,9 @@ async function addAdminCommand(message, params) {
   if (!message.mentions.users.size) {
     return message.reply('Missing new admin to add.');
   }
+  const {
+    author: { id: authorId },
+  } = message;
   const adminQuery = `
     SELECT user_id FROM admin
     WHERE user_id = VALUES($1)::TEXT;
